@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duolingo Word Master - Audio Dual Reorder</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #e3fffe 0%, #edf1ff 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background-color: white;
+            width: 100%;
+            max-width: 520px;
+            padding: 24px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(88, 204, 2, 0.15);
+            border: 3px solid #d7ffb8;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .progress-bar-container {
+            flex-grow: 1;
+            height: 16px;
+            background-color: #e5e5e5;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #58cc02;
+            transition: width 0.3s ease;
+        }
+        .score-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .score-display {
+            background-color: #fff9e6;
+            color: #ff9600;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 2px solid #ffe1a8;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .btn-reset {
+            background-color: #ffebee;
+            color: #d32f2f;
+            border: 2px solid #ffcdd2;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            white-space: nowrap;
+        }
+        .btn-reset:hover {
+            background-color: #ffcdd2;
+            border-color: #ef9a9a;
+        }
+        .question-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e1f5fe 100%);
+            border: 2px solid #b3e5fc;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .question-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #01579b;
+            line-height: 1.4;
+            margin: 0;
+        }
+        .btn-audio {
+            background-color: #1cb0f6;
+            color: white;
+            border: none;
+            border-bottom: 4px solid #0084c7;
+            padding: 12px 20px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.1s ease;
+        }
+        .btn-audio:hover {
+            transform: scale(1.05);
+        }
+        .btn-audio:active {
+            transform: scale(0.95);
+            border-bottom-width: 2px;
+            transform: translateY(2px);
+        }
+        .set-badge {
+            display: inline-block;
+            background-color: #e1f5fe;
+            color: #0288d1;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .section-label {
+            font-size: 15px;
+            font-weight: bold;
+            color: #01579b;
+            margin-bottom: 6px;
+            margin-top: 10px;
+        }
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .btn-option {
+            background-color: white;
+            border: 2px solid #e5e5e5;
+            border-bottom-width: 4px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #4b4b4b;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.1s ease;
+        }
+        .btn-option:hover {
+            background-color: #f7f9fc;
+            border-color: #b8c4ce;
+        }
+        .btn-option.selected {
+            background-color: #ddf4ff;
+            border-color: #1cb0f6;
+            color: #0077b6;
+        }
+        .sentence-box {
+            min-height: 50px;
+            border: 2px dashed #80d8ff;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            background-color: #f5fcff;
+        }
+        .word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .chip {
+            background-color: #ffffff;
+            border: 2px solid #e5e5e5;
+            border-bottom-width: 4px;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+        .chip.used {
+            opacity: 0.3;
+            pointer-events: none;
+            background-color: #e0e0e0;
+        }
+        .selected-chip {
+            background-color: #e1f5fe;
+            border: 2px solid #00bcd4;
+            border-bottom-width: 4px;
+            color: #00838f;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .matching-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .match-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .match-item {
+            background-color: white;
+            border: 2px solid #e5e5e5;
+            border-bottom-width: 4px;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s;
+        }
+        .match-item:hover {
+            background-color: #f0f7ff;
+        }
+        .match-item.active {
+            background-color: #ddf4ff;
+            border-color: #1cb0f6;
+            color: #0077b6;
+        }
+        .match-item.hidden {
+            display: none;
+        }
+        .btn-check {
+            width: 100%;
+            background-color: #58cc02;
+            color: white;
+            border: none;
+            border-bottom: 4px solid #46a302;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .btn-check:hover {
+            filter: brightness(1.05);
+        }
+        .btn-check:disabled {
+            background-color: #e5e5e5;
+            border-bottom-color: #ccc;
+            color: #afafaf;
+            cursor: not-allowed;
+        }
+        .feedback {
+            padding: 15px;
+            border-radius: 14px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: none;
+        }
+        .feedback.correct {
+            display: block;
+            background-color: #d7ffb8;
+            color: #388e3c;
+            border: 1px solid #a5d6a7;
+        }
+        .feedback.wrong {
+            display: block;
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="header">
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+        <div class="score-container">
+            <button class="btn-reset" onclick="resetScore()" title="Đặt lại điểm số">🔄 Reset</button>
+            <div class="score-display">⭐ <span id="score-count">0</span>đ</div>
+        </div>
+    </div>
+
+    <div id="game-body">
+        <div class="question-card">
+            <div id="set-badge-container"></div>
+            <div class="question-title" id="question-text">Đang tải câu hỏi...</div>
+            <div id="audio-btn-container"></div>
+        </div>
+        <div id="question-content"></div>
+        <div class="feedback" id="feedback-box"></div>
+        <button class="btn-check" id="action-btn" disabled onclick="checkAnswer()">Kiểm tra</button>
+    </div>
+</div>
+
+<script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioContext();
+    }
+
+    function playSelectSound() {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    function playCorrectSound() {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain();
+        osc1.type = 'triangle'; osc1.frequency.setValueAtTime(523.25, now);
+        gain1.gain.setValueAtTime(0.2, now); gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc1.connect(gain1); gain1.connect(audioCtx.destination);
+        osc1.start(now); osc1.stop(now + 0.2);
+
+        const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
+        osc2.type = 'triangle'; osc2.frequency.setValueAtTime(783.99, now + 0.12);
+        gain2.gain.setValueAtTime(0.25, now + 0.12); gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc2.connect(gain2); gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.12); osc2.stop(now + 0.4);
+    }
+
+    function playWrongSound() {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now); osc.frequency.setValueAtTime(130, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 0.4);
+    }
+
+    function playWinSound() {
+        initAudio();
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+            const now = audioCtx.currentTime + idx * 0.12;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.3);
+        });
+    }
+
+    // Biến toàn cục lưu đối tượng đọc để tránh lỗi Garbage Collection của trình duyệt
+    let currentUtterance = null;
+    function speakChinese(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.lang = 'zh-CN';
+            currentUtterance.rate = 0.9;
+            window.speechSynthesis.speak(currentUtterance);
+        }
+    }
+
+    const questionSets = [
+        {
+            setId: 1,
+            setName: "Bộ 1: Ôn tập cơ bản",
+            questions: [
+                {
+                    id: 1,
+                    type: "reorder",
+                    title: "Sắp xếp câu: 'Chiếc xe không khởi động—bạn có thể sửa nó không?'",
+                    words: ["The car", "won't start", "can you", "fix it"],
+                    correctOrder: ["The car", "won't start", "can you", "fix it"],
+                    explain: "The car won't start—can you fix it?"
+                },
+                {
+                    id: 2,
+                    type: "matching",
+                    title: "Nối các từ tiếng Việt với từ tiếng Anh tương ứng:",
+                    pairs: [
+                        { vi: "Sửa chữa", en: "Fix" },
+                        { vi: "Điều chỉnh", en: "Adjust" },
+                        { vi: "Trang thiết bị", en: "Equipment" },
+                        { vi: "Bắt tay", en: "Shake hand" }
+                    ],
+                    explain: "Các từ vựng hành động và danh từ cơ bản đã được nối chính xác."
+                },
+                {
+                    id: 3,
+                    type: "multiple",
+                    title: "Chọn câu tiếng Anh dịch đúng nghĩa cho câu: 'Chiếc xe không nổ máy—bạn có thể sửa nó không?'",
+                    options: [
+                        "The car won't start—can you fix it?",
+                        "We need to get the TV fixed.",
+                        "I adjusted the seat before driving.",
+                        "Could you please adjust the air conditioner?"
+                    ],
+                    correct: 0,
+                    explain: "The car won't start—can you fix it?"
+                }
+            ]
+        },
+        {
+            setId: 2,
+            setName: "Bộ 2: Luyện tập Dual-Reorder",
+            questions: [
+                {
+                    id: 4,
+                    type: "dual-reorder",
+                    title: "Sắp xếp nghĩa tiếng Việt và Pinyin cho câu tiếng Anh:",
+                    englishSentence: "The car won't start—can you fix it?",
+                    viWords: ["Chiếc xe", "không nổ máy", "bạn có thể", "sửa nó không?"],
+                    correctViOrder: ["Chiếc xe", "không nổ máy", "bạn có thể", "sửa nó không?"],
+                    pinyinWords: ["qì chē", "qǐ dòng", "bù liǎo", "nǐ néng", "xiū ma"],
+                    correctPinyinOrder: ["qì chē", "qǐ dòng", "bù liǎo", "nǐ néng", "xiū ma"],
+                    explain: "Câu tiếng Anh: The car won't start—can you fix it? | Tiếng Trung tương ứng: 汽车启动不了——你能修吗？"
+                },
+                {
+                    id: 5,
+                    type: "audio-dual-reorder",
+                    title: "Nghe câu tiếng Trung và sắp xếp Chữ Hán & Tiếng Việt:",
+                    chineseText: "你吃饭了吗？",
+                    pinyinText: "Nǐ chī fàn le ma?",
+                    hanziWords: ["你", "吃", "饭", "了", "吗"],
+                    correctHanziOrder: ["你", "吃", "饭", "了", "吗"],
+                    viWords: ["Bạn", "ăn", "cơm", "chưa", "?"],
+                    correctViOrder: ["Bạn", "ăn", "cơm", "chưa", "?"],
+                    explain: "Nghĩa: Bạn ăn cơm chưa? (Nǐ chī fàn le ma?)"
+                }
+            ]
+        }
+    ];
+
+    let unplayedSetsKey = 'duolingo_unplayed_sets';
+    let currentSetKey = 'duolingo_active_set_idx';
+    let currentQKey = 'duolingo_current_q_idx';
+
+    let unplayedSetIndices = JSON.parse(localStorage.getItem(unplayedSetsKey));
+    
+    if (!unplayedSetIndices || unplayedSetIndices.length === 0) {
+        unplayedSetIndices = questionSets.map((_, index) => index);
+    }
+
+    let currentSetIndex = parseInt(localStorage.getItem(currentSetKey));
+    
+    if (isNaN(currentSetIndex) || !unplayedSetIndices.includes(currentSetIndex)) {
+        const randomIndex = Math.floor(Math.random() * unplayedSetIndices.length);
+        currentSetIndex = unplayedSetIndices[randomIndex];
+        localStorage.setItem(currentSetKey, currentSetIndex);
+        localStorage.setItem(currentQKey, 0);
+    }
+
+    let currentSet = questionSets[currentSetIndex];
+    let currentIdx = parseInt(localStorage.getItem(currentQKey)) || 0;
+
+    if (currentIdx >= currentSet.questions.length) {
+        currentIdx = 0;
+    }
+
+    let score = parseInt(localStorage.getItem('duolingo_score')) || 0;
+    let correctQuestionsCount = parseInt(localStorage.getItem('duolingo_correct_count')) || 0;
+
+    document.getElementById("score-count").innerText = score;
+
+    let selectedOption = null;
+    let userOrder = [];
+    let userViOrder = [];
+    let userPinyinOrder = [];
+    let userHanziOrder = [];
+    let selectedViItem = null;
+    let selectedEnItem = null;
+    let matchedPairsCount = 0;
+    let isChecked = false;
+
+    function resetScore() {
+        if (confirm("Bạn có chắc chắn muốn đặt lại điểm số và tiến trình học không?")) {
+            localStorage.removeItem('duolingo_score');
+            localStorage.removeItem('duolingo_correct_count');
+            localStorage.removeItem(unplayedSetsKey);
+            localStorage.removeItem(currentSetKey);
+            localStorage.removeItem(currentQKey);
+            location.reload();
+        }
+    }
+
+    function updateDualReorderButtonState(q) {
+        const isViComplete = userViOrder.length === q.viWords.length;
+        const isPinyinComplete = userPinyinOrder.length === q.pinyinWords.length;
+        document.getElementById("action-btn").disabled = !(isViComplete && isPinyinComplete);
+    }
+
+    function updateAudioDualReorderButtonState(q) {
+        const isHanziComplete = userHanziOrder.length === q.hanziWords.length;
+        const isViComplete = userViOrder.length === q.viWords.length;
+        document.getElementById("action-btn").disabled = !(isHanziComplete && isViComplete);
+    }
+
+    function loadQuestion() {
+        const q = currentSet.questions[currentIdx];
+        
+        document.getElementById("set-badge-container").innerHTML = `<div class="set-badge">🎯 ${currentSet.setName} (Câu ${currentIdx + 1}/${currentSet.questions.length})</div>`;
+        document.getElementById("audio-btn-container").innerHTML = "";
+
+        if (q.type === "dual-reorder") {
+            document.getElementById("question-text").innerText = q.title + "\n📌 " + q.englishSentence;
+        } else if (q.type === "audio-dual-reorder") {
+            document.getElementById("question-text").innerText = q.title;
+            const audioBtn = document.createElement("button");
+            audioBtn.className = "btn-audio";
+            audioBtn.innerHTML = "🔊";
+            audioBtn.title = "Nghe câu tiếng Trung";
+            audioBtn.onclick = () => speakChinese(q.chineseText);
+            document.getElementById("audio-btn-container").appendChild(audioBtn);
+        } else {
+            document.getElementById("question-text").innerText = q.title;
+        }
+        
+        const contentBox = document.getElementById("question-content");
+        contentBox.innerHTML = "";
+        
+        document.getElementById("feedback-box").className = "feedback";
+        document.getElementById("feedback-box").style.display = "none";
+        document.getElementById("action-btn").innerText = "Kiểm tra";
+        document.getElementById("action-btn").disabled = true;
+        document.getElementById("action-btn").onclick = checkAnswer;
+        isChecked = false;
+
+        if (q.type === "multiple") {
+            selectedOption = null;
+            const optsContainer = document.createElement("div");
+            optsContainer.className = "options-container";
+            
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement("button");
+                btn.className = "btn-option";
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if (isChecked) return;
+                    playSelectSound();
+                    document.querySelectorAll(".btn-option").forEach(b => b.classList.remove("selected"));
+                    btn.classList.add("selected");
+                    selectedOption = index;
+                    document.getElementById("action-btn").disabled = false;
+                };
+                optsContainer.appendChild(btn);
+            });
+            contentBox.appendChild(optsContainer);
+
+        } else if (q.type === "reorder") {
+            userOrder = [];
+            const answerZone = document.createElement("div");
+            answerZone.className = "sentence-box";
+            answerZone.id = "answer-zone";
+
+            const wordBank = document.createElement("div");
+            wordBank.className = "word-bank";
+            wordBank.id = "word-bank";
+
+            const shuffledWords = [...q.words].sort(() => Math.random() - 0.5);
+
+            shuffledWords.forEach((word) => {
+                const chip = document.createElement("button");
+                chip.className = "chip";
+                chip.innerText = word;
+                
+                chip.onclick = () => {
+                    if (isChecked) return;
+                    playSelectSound();
+                    userOrder.push(word);
+                    
+                    const selectedChip = document.createElement("div");
+                    selectedChip.className = "selected-chip";
+                    selectedChip.innerText = word;
+                    
+                    selectedChip.onclick = () => {
+                        if (isChecked) return;
+                        playSelectSound();
+                        userOrder = userOrder.filter(w => w !== word);
+                        selectedChip.remove();
+                        chip.classList.remove("used");
+                        document.getElementById("action-btn").disabled = (userOrder.length === 0);
+                    };
+
+                    answerZone.appendChild(selectedChip);
+                    chip.classList.add("used");
+                    document.getElementById("action-btn").disabled = false;
+                };
+                wordBank.appendChild(chip);
+            });
+
+            contentBox.appendChild(answerZone);
+            contentBox.appendChild(wordBank);
+
+        } else if (q.type === "dual-reorder") {
+            userViOrder = [];
+            userPinyinOrder = [];
+
+            const container = document.createElement("div");
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+            container.style.gap = "10px";
+
+            const viLabel = document.createElement("div");
+            viLabel.className = "section-label";
+            viLabel.innerText = "🇻🇳 Sắp xếp nghĩa tiếng Việt:";
+            container.appendChild(viLabel);
+
+            const viAnswerZone = document.createElement("div");
+            viAnswerZone.className = "sentence-box";
+            container.appendChild(viAnswerZone);
+
+            const viWordBank = document.createElement("div");
+            viWordBank.className = "word-bank";
+            const shuffledVi = [...q.viWords].sort(() => Math.random() - 0.5);
+            shuffledVi.forEach(word => {
+                const chip = document.createElement("button");
+                chip.className = "chip";
+                chip.innerText = word;
+                chip.onclick = () => {
+                    if (isChecked) return;
+                    playSelectSound();
+                    userViOrder.push(word);
+                    const selectedChip = document.createElement("div");
+                    selectedChip.className = "selected-chip";
+                    selectedChip.innerText = word;
+                    selectedChip.onclick = () => {
+                        if (isChecked) return;
+                        playSelectSound();
+                        userViOrder = userViOrder.filter(w => w !== word);
+                        selectedChip.remove();
+                        chip.classList.remove("used");
+                        updateDualReorderButtonState(q);
+                    };
+                    viAnswerZone.appendChild(selectedChip);
+                    chip.classList.add("used");
+                    updateDualReorderButtonState(q);
+                };
+                viWordBank.appendChild(chip);
+            });
+            container.appendChild(viWordBank);
+
+            const pyLabel = document.createElement("div");
+            pyLabel.className = "section-label";
+            pyLabel.innerText = "🇨🇳 Sắp xếp Pinyin:";
+            container.appendChild(pyLabel);
+
+            const pyAnswerZone = document.createElement("div");
+            pyAnswerZone.className = "sentence-box";
+            container.appendChild(pyAnswerZone);
+
+            const pyWordBank = document.createElement("div");
+            pyWordBank.className = "word-bank";
+            const shuffledPy = [...q.pinyinWords].sort(() => Math.random() - 0.5);
+            shuffledPy.forEach(word => {
+                const chip = document.createElement("button");
+                chip.className = "chip";
+                chip.innerText = word;
+                chip.onclick = () => {
+                    if (isChecked) return;
+                    playSelectSound();
+                    userPinyinOrder.push(word);
+                    const selectedChip = document.createElement("div");
+                    selectedChip.className = "selected-chip";
+                    selectedChip.innerText = word;
+                    selectedChip.onclick = () => {
+                        if (isChecked) return;
+                        playSelectSound();
+                        userPinyinOrder = userPinyinOrder.filter(w => w !== word);
+                        selectedChip.remove();
+                        chip.classList.remove("used");
+                        updateDualReorderButtonState(q);
+                    };
+                    pyAnswerZone.appendChild(selectedChip);
+                    chip.classList.add("used");
+                    updateDualReorderButtonState(q);
+                };
+                pyWordBank.appendChild(chip);
+            });
+            container.appendChild(pyWordBank);
+
+            contentBox.appendChild(container);
+
+        } else if (q.type === "audio-dual-reorder") {
+            userHanziOrder = [];
+            userViOrder = [];
+
+            const container = document.createElement("div");
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+            container.style.gap = "10px";
+
+            const hanziLabel = document.createElement("div");
+            hanziLabel.className = "section-label";
+            hanziLabel.innerText = "🇨🇳 Sắp xếp Chữ Hán (Bấm vào từ để nghe đọc):";
+            container.appendChild(hanziLabel);
+
+            const hanziAnswerZone = document.createElement("div");
+            hanziAnswerZone.className = "sentence-box";
+            container.appendChild(hanziAnswerZone);
+
+            const hanziWordBank = document.createElement("div");
+            hanziWordBank.className = "word-bank";
+            const shuffledHanzi = [...q.hanziWords].sort(() => Math.random() - 0.5);
+            shuffledHanzi.forEach(word => {
+                const chip = document.createElement("button");
+                chip.className = "chip";
+                chip.innerText = word;
+                chip.onclick = () => {
+                    if (isChecked) return;
+                    playSelectSound();
+                    speakChinese(word); // Đọc chữ Hán lên khi bấm
+                    userHanziOrder.push(word);
+                    const selectedChip = document.createElement("div");
+                    selectedChip.className = "selected-chip";
+                    selectedChip.innerText = word;
+                    selectedChip.onclick = () => {
+                        if (isChecked) return;
+                        playSelectSound();
+                        speakChinese(word); // Đọc chữ Hán lên khi bấm vào ô đã chọn
+                        userHanziOrder = userHanziOrder.filter(w => w !== word);
+                        selectedChip.remove();
+                        chip.classList.remove("used");
+                        updateAudioDualReorderButtonState(q);
+                    };
+                    hanziAnswerZone.appendChild(selectedChip);
+                    chip.classList.add("used");
+                    updateAudioDualReorderButtonState(q);
+                };
+                hanziWordBank.appendChild(chip);
+            });
+            container.appendChild(hanziWordBank);
+
+            const viLabel = document.createElement("div");
+            viLabel.className = "section-label";
+            viLabel.innerText = "🇻🇳 Sắp xếp Tiếng Việt:";
+            container.appendChild(viLabel);
+
+            const viAnswerZone = document.createElement("div");
+            viAnswerZone.className = "sentence-box";
+            container.appendChild(viAnswerZone);
+
+            const viWordBank = document.createElement("div");
+            viWordBank.className = "word-bank";
+            const shuffledVi = [...q.viWords].sort(() => Math.random() - 0.5);
+            shuffledVi.forEach(word => {
+                const chip = document.createElement("button");
+                chip.className = "chip";
+                chip.innerText = word;
+                chip.onclick = () => {
+                    if (isChecked) return;
+                    playSelectSound();
+                    userViOrder.push(word);
+                    const selectedChip = document.createElement("div");
+                    selectedChip.className = "selected-chip";
+                    selectedChip.innerText = word;
+                    selectedChip.onclick = () => {
+                        if (isChecked) return;
+                        playSelectSound();
+                        userViOrder = userViOrder.filter(w => w !== word);
+                        selectedChip.remove();
+                        chip.classList.remove("used");
+                        updateAudioDualReorderButtonState(q);
+                    };
+                    viAnswerZone.appendChild(selectedChip);
+                    chip.classList.add("used");
+                    updateAudioDualReorderButtonState(q);
+                };
+                viWordBank.appendChild(chip);
+            });
+            container.appendChild(viWordBank);
+
+            contentBox.appendChild(container);
+
+        } else if (q.type === "matching") {
+            matchedPairsCount = 0;
+            selectedViItem = null;
+            selectedEnItem = null;
+
+            const grid = document.createElement("div");
+            grid.className = "matching-grid";
+
+            const colVi = document.createElement("div");
+            colVi.className = "match-col";
+            const shuffledVi = [...q.pairs].sort(() => Math.random() - 0.5);
+            
+            shuffledVi.forEach(p => {
+                const item = document.createElement("div");
+                item.className = "match-item";
+                item.innerText = p.vi;
+                item.dataset.value = p.vi;
+                
+                item.onclick = () => {
+                    if (isChecked || item.classList.contains("hidden")) return;
+                    playSelectSound();
+                    
+                    colVi.querySelectorAll(".match-item").forEach(el => el.classList.remove("active"));
+                    item.classList.add("active");
+                    selectedViItem = item;
+
+                    checkMatchPair(q);
+                };
+                colVi.appendChild(item);
+            });
+
+            const colEn = document.createElement("div");
+            colEn.className = "match-col";
+            const shuffledEn = [...q.pairs].sort(() => Math.random() - 0.5);
+
+            shuffledEn.forEach(p => {
+                const item = document.createElement("div");
+                item.className = "match-item";
+                item.innerText = p.en;
+                item.dataset.value = p.en;
+                
+                item.onclick = () => {
+                    if (isChecked || item.classList.contains("hidden")) return;
+                    playSelectSound();
+
+                    colEn.querySelectorAll(".match-item").forEach(el => el.classList.remove("active"));
+                    item.classList.add("active");
+                    selectedEnItem = item;
+
+                    checkMatchPair(q);
+                };
+                colEn.appendChild(item);
+            });
+
+            grid.appendChild(colVi);
+            grid.appendChild(colEn);
+            contentBox.appendChild(grid);
+        }
+
+        const progressPct = ((currentIdx) / currentSet.questions.length) * 100;
+        document.getElementById("progress").style.width = progressPct + "%";
+    }
+
+    function checkMatchPair(q) {
+        if (selectedViItem && selectedEnItem) {
+            const viVal = selectedViItem.dataset.value;
+            const enVal = selectedEnItem.dataset.value;
+
+            const isValidPair = q.pairs.some(p => p.vi === viVal && p.en === enVal);
+            const feedbackBox = document.getElementById("feedback-box");
+
+            if (isValidPair) {
+                playCorrectSound();
+                score += 10;
+                correctQuestionsCount++;
+                
+                localStorage.setItem('duolingo_score', score);
+                localStorage.setItem('duolingo_correct_count', correctQuestionsCount);
+
+                document.getElementById("score-count").innerText = score;
+
+                feedbackBox.className = "feedback correct";
+                feedbackBox.innerText = "🎉 Đúng một cặp! (+10 điểm)";
+                feedbackBox.style.display = "block";
+
+                selectedViItem.classList.add("hidden");
+                selectedEnItem.classList.add("hidden");
+
+                matchedPairsCount++;
+
+                if (matchedPairsCount === q.pairs.length) {
+                    isChecked = true;
+                    const actionBtn = document.getElementById("action-btn");
+                    actionBtn.disabled = false;
+                    actionBtn.innerText = "Tiếp theo";
+                    actionBtn.onclick = nextQuestion;
+                    feedbackBox.innerText = "🎉 Hoàn thành bài nối từ! " + q.explain;
+                }
+            } else {
+                playWrongSound();
+                feedbackBox.className = "feedback wrong";
+                feedbackBox.innerText = "❌ Không phải cặp này! Thử lại nhé.";
+                feedbackBox.style.display = "block";
+            }
+
+            selectedViItem.classList.remove("active");
+            selectedEnItem.classList.remove("active");
+            selectedViItem = null;
+            selectedEnItem = null;
+        }
+    }
+
+    function checkAnswer() {
+        isChecked = true;
+        const q = currentSet.questions[currentIdx];
+        const feedbackBox = document.getElementById("feedback-box");
+        const actionBtn = document.getElementById("action-btn");
+        let isCorrect = false;
+
+        if (q.type === "multiple") {
+            isCorrect = (selectedOption === q.correct);
+        } else if (q.type === "reorder") {
+            isCorrect = (JSON.stringify(userOrder) === JSON.stringify(q.correctOrder));
+        } else if (q.type === "dual-reorder") {
+            const viCorrect = (JSON.stringify(userViOrder) === JSON.stringify(q.correctViOrder));
+            const pyCorrect = (JSON.stringify(userPinyinOrder) === JSON.stringify(q.correctPinyinOrder));
+            isCorrect = viCorrect && pyCorrect;
+        } else if (q.type === "audio-dual-reorder") {
+            const hanziCorrect = (JSON.stringify(userHanziOrder) === JSON.stringify(q.correctHanziOrder));
+            const viCorrect = (JSON.stringify(userViOrder) === JSON.stringify(q.correctViOrder));
+            isCorrect = hanziCorrect && viCorrect;
+        }
+
+        if (isCorrect) {
+            playCorrectSound();
+            score += 10;
+            correctQuestionsCount++;
+
+            localStorage.setItem('duolingo_score', score);
+            localStorage.setItem('duolingo_correct_count', correctQuestionsCount);
+
+            document.getElementById("score-count").innerText = score;
+            feedbackBox.className = "feedback correct";
+            feedbackBox.innerText = "🎉 Chính xác! (+10 điểm) " + q.explain;
+        } else {
+            playWrongSound();
+            feedbackBox.className = "feedback wrong";
+            feedbackBox.innerText = "❌ Tiếc quá! (0 điểm) " + q.explain;
+        }
+        
+        feedbackBox.style.display = "block";
+        actionBtn.innerText = "Tiếp theo";
+        actionBtn.onclick = nextQuestion;
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        localStorage.setItem(currentQKey, currentIdx);
+
+        if (currentIdx >= currentSet.questions.length) {
+            playWinSound();
+            document.getElementById("progress").style.width = "100%";
+            
+            let storedUnplayed = JSON.parse(localStorage.getItem(unplayedSetsKey)) || questionSets.map((_, i) => i);
+            storedUnplayed = storedUnplayed.filter(idx => idx !== currentSetIndex);
+            
+            if (storedUnplayed.length === 0) {
+                storedUnplayed = questionSets.map((_, i) => i);
+            }
+
+            localStorage.setItem(unplayedSetsKey, JSON.stringify(storedUnplayed));
+            localStorage.removeItem(currentSetKey);
+            localStorage.removeItem(currentQKey);
+
+            document.getElementById("game-body").innerHTML = `
+                <h2 style="color: #58cc02; text-align: center;">🏆 Hoàn thành ${currentSet.setName}!</h2>
+                <p style="text-align: center; font-size: 20px; font-weight: bold; color: #ff9600; margin: 15px 0;">Tổng điểm: ${score} điểm</p>
+                <p style="text-align: center; font-size: 16px; color: #555; margin-bottom: 25px;">Bạn đã hoàn thành bộ này thành công!</p>
+                <button class="btn-check" onclick="location.reload()">Chơi bộ tiếp theo</button>
+            `;
+        } else {
+            loadQuestion();
+        }
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
